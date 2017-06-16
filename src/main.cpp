@@ -4,6 +4,10 @@
 #include "PID.h"
 #include <math.h>
 
+#define ENABLE_TWIDDLE 1
+#define DISABLE_TWIDDLE 0
+#define TWIDDLE DISABLE_TWIDDLE
+
 // for convenience
 using json = nlohmann::json;
 
@@ -33,9 +37,9 @@ int main()
   uWS::Hub h;
 
   PID pid;
-  double Kp = 0.08;
-  double Ki = 0.004;
-  double Kd = 0.1;
+  double Kp = 0.1; //Initial value = 0.1
+  double Ki = 0.0; //Initial value = 0.0
+  double Kd = 0.435429; //Initial value = 0.08
   pid.Init(Kp,Ki,Kd);
   // TODO: Initialize the pid variable.
 
@@ -61,14 +65,25 @@ int main()
           * NOTE: Feel free to play around with the throttle and speed. Maybe use
           * another PID controller to control the speed!
           */
+          /*if (abs(cte) > 2.2) {
+        	  std::string msg = "42[\"reset\",{}]";
+        	  ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+          }*/
+          if (TWIDDLE && (pid.steps == 500 || pid.TotalError() > pid.best_error)) {
+        	  pid.twiddle();
+        	  std::string msg = "42[\"reset\",{}]";
+			  ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+          }
           pid.UpdateError(cte);
-          steer_value = pid.TotalError();
+          steer_value = pid.getSteeringAngle();
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << " Steps: " << pid.steps <<
+        		  " Total Error: " << pid.TotalError() << " Best Error: " << pid.best_error << std::endl;
+          std::cout << "Kp: " << pid.Kp << " Ki: " << pid.Ki << " Kd: " << pid.Kd << std::endl << std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.1;
+          msgJson["throttle"] = 0.3;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);

@@ -6,6 +6,7 @@ class PID {
 private:
 	double cte_previous;
 	double cte_sum;
+	double total_error;
 
 public:
   /*
@@ -22,6 +23,8 @@ public:
   double Ki;
   double Kd;
 
+  int steps;
+  double best_error;
   /*
   * Constructor
   */
@@ -46,6 +49,10 @@ public:
   * Calculate the total PID error.
   */
   double TotalError();
+
+  void twiddle();
+
+  double getSteeringAngle();
 };
 
 #endif /* PID_H */
